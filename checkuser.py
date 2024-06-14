@@ -397,7 +397,7 @@ class splunk_spl:
         return result
     
     def check_log_date(self):
-          with open('./D-ctrl_Log.log', 'r+') as f:
+          with open('./_Log.log', 'r+') as f:
             log_date=f.read()
             log_date=log_date.split(" ")[0]
             print("#JOB_RESULT result=%sqweqweqwweqwewqeqweqeqweqeqeqweeqwe"% log_date)
@@ -420,13 +420,16 @@ class splunk_spl:
               res splunk中的查询数据
           """
 
+          # 一个查询应该在封装一个方法
           list_Addressee=[]
           query_Addressee = '| inputlookup PushUserList.csv  '
-          result_Addressee=self.query_by_app(query_Addressee,"DCtrlChatBot")
+          result_Addressee=self.query_by_app(query_Addressee,"ChatBot")
           #print("#JOB_RESULT result_Addressee=%s" % result_Addressee)
-       
+          # if not result_Addressee:
           if result_Addressee == [] :
+            # self.check_log_Date()
             splunk_spl().check_log_date()
+            # 封装成一个单例或者一个共同的模块
             logger = logging.getLogger("_Log.log")
             fmt='%(asctime)s - %(pathname)s[line:%(lineno)d] - %(levelname)s: %(message)s'
             format_str = logging.Formatter(fmt)
@@ -439,12 +442,13 @@ class splunk_spl:
           #需要修改后缀
           
           
-          
+          # 格式没对齐，i没有意义，语法使用不简洁，命名不规范
           for i in range(len(result_Addressee)):
              list_Addressee.append(result_Addressee[i]["id"])
+          # result_Addressee = [addressee_data["id"] for addressee_data in result_Addressee]
           #print("#JOB_RESULT list_Addressee=%s" % list_Addressee)
           
-          
+          # 封装成一个方法
           result={}
           list_Addressee_APP=[]
           result1=""
@@ -454,27 +458,31 @@ class splunk_spl:
             list_verify_system=[]
             for i in range(len(result_verify_system)):
               list_verify_system.append(result_verify_system[i]["System"])
+            # 应该在循环中就判断是否加入列表
             if "Jira" not in list_verify_system:
               continue
      
             #query='|`searchProjectsByUserChatbot("%s")`'% list_Addressee[b]
             #修改解除限制
             query='|`searchProjectsByUserChatbot("%s")`' % "a"
-            result_Addressee_rights = self.query_by_app(query,"DCtrlChatBot")
+            result_Addressee_rights = self.query_by_app(query,"ChatBot")
             #print("#JOB_RESULT result_Addressee_rights=%s" % result_Addressee_rights)
             list_Addressee_APP=[]
             list_Addressee_rights=[]
             for i in range(len(result_Addressee_rights)):
+              # 命名不规范，可以长但最好不要缩写，避免读下面代码不好理解 
               Pname=result_Addressee_rights[i]["ProjectName"]
               Aname=result_Addressee_rights[i]["AppName"]
-           # print("#JOB_RESULT Pname=%s" %  Pname)
+              # for row in result_Addressee_rights:
+              #   list_Addressee_rights.append(row["ProjectName"])
               list_Addressee_rights.append(Pname)
               list_Addressee_APP.append(Aname)
             print("#JOB_RESULT list_Addresse_APP=%s" % list_Addressee_APP)
             list_Addressee_APP=list(set(list_Addressee_APP))
             
             for AppName in list_Addressee_APP:
-              Appname="deliverycontroljira"
+              # 不应该循环访问数据库
+              Appname="jira"
               query = '|search `getJiraUserLoginInfo4Chatbot`'
               
               result_login_info = self.query_by_app(query,Appname)
@@ -486,12 +494,13 @@ class splunk_spl:
                 list_login_name.append(Lname)
               #print("#JOB_RESULT list_login_name=%s" % list_login_name)
 
-              dic_users_rights={}   
+              dic_users_rights={}
+              # 查询嵌套
               for i in range(len(list_login_name)):
                 list_user_rights=[]
                 query='|`searchProjectsByUserChatbot("%s")`' % list_login_name[i]
                 #query='|`searchProjectsByUserChatbot("%s")`' % "a"
-                result_user_rights = self.query_by_app(query,"DCtrlChatBot")
+                result_user_rights = self.query_by_app(query,"ChatBot")
                # print("#JOB_RESULT result_user_rights=%s" % result_user_rights)
                 for j in range(len(result_user_rights)):
                   User_Pname=result_user_rights[j]["ProjectName"]
@@ -508,6 +517,7 @@ class splunk_spl:
               html1 = """<h><strong>Jira(%s)</strong></h><table border="1" cellspacing="0" bgcolor="#FCFCFC"><tr><td bgcolor="#AEDD81"><big>&nbsp;&nbsp;user</big></td><td bgcolor="#AEDD81"><big>count</big></td><td bgcolor="#AEDD81"><big>&nbsp;&nbsp;lastestTime</big></td></tr>"""% AppName
               for i in range(len(result_login_info)):
                 #print(result_login_info[i]['user'])
+                # 不应该用异常捕获，应该get设置默认值
                 if result_login_info[i]['user'] in list_sent:
                   try:
                     user = result_login_info[i]['user']
@@ -522,7 +532,7 @@ class splunk_spl:
                     lastesTime = result_login_info[i]["lastestTime"]
                   except(Exception):
                     lastesTime = ""
-
+                  # 变量名命名非常不明确，看起来应该是一行数据，row_data_html
                   html2 = """<tr><td>%s</td><td>%s</td><td>%s</td></tr>""" % (user, count, lastesTime)
                 else:
                   continue
@@ -562,10 +572,10 @@ class splunk_spl:
 
         if result_Addressee == [] :
           splunk_spl().check_log_date()
-          logger = logging.getLogger("D-ctrl_Log.log")
+          logger = logging.getLogger("_Log.log")
           fmt='%(asctime)s - %(pathname)s[line:%(lineno)d] - %(levelname)s: %(message)s'
           format_str = logging.Formatter(fmt)
-          th = handlers.TimedRotatingFileHandler(filename="D-ctrl_Log.log", when='D', encoding='utf-8')
+          th = handlers.TimedRotatingFileHandler(filename="_Log.log", when='D', encoding='utf-8')
           th.setFormatter(format_str)#设置文件里写入的格式
           logger.addHandler(th)
           logger.error("PushUserList.csvの情報はありません")
@@ -694,10 +704,10 @@ class splunk_spl:
         result_Addressee=self.query_by_app(query_Addressee,"DCtrlChatBot")
         if result_Addressee == [] :            
             splunk_spl().check_log_date()
-            logger = logging.getLogger("D-ctrl_Log.log")
+            logger = logging.getLogger("_Log.log")
             fmt='%(asctime)s - %(pathname)s[line:%(lineno)d] - %(levelname)s: %(message)s'
             format_str = logging.Formatter(fmt)
-            th = handlers.TimedRotatingFileHandler(filename="D-ctrl_Log.log", when='D', encoding='utf-8')
+            th = handlers.TimedRotatingFileHandler(filename="_Log.log", when='D', encoding='utf-8')
             th.setFormatter(format_str)#设置文件里写入的格式
             logger.addHandler(th)
             logger.error("PushUserList.csvの情報はありません")
